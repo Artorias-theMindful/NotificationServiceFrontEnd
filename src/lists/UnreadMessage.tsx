@@ -48,7 +48,7 @@ function MessagesListItem(props: { notification: Notification, user: User }) {
     })
   }, [props.notification.created_by]);
   const handleCheckboxChange = () => {
-    axios.post(`http://localhost:5000/users/${props.user.id}/notifications/${props.notification.id}`).then((responce) =>{
+    axios.post(`http://localhost:5000/notifications/${props.notification.id}`).then((responce) =>{
       if(responce.status == 200){
         setIsRead(true);  
       }
