@@ -1,0 +1,10 @@
+.badge {
+    right: 10;
+    top: 0;
+    border: '2px solid';
+    padding: '0 4px';
+}
+
+.styledBadge {
+    color: blue;
+}

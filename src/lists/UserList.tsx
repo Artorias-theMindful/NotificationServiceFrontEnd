@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import * as React from 'react';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -11,93 +10,87 @@ import { User } from '../App';
 import UnreadMessagesList from './UnreadMessage';
 import MessageUserList from './MessageUser';
 import { Notification } from './UnreadMessage';
-const StyledBadge = styled(Badge)<BadgeProps>(({ theme }) => ({
-  '& .MuiBadge-badge': {
-    right: 10,
-    top: 0,
-    border: `2px solid ${theme.palette.background.paper}`,
-    padding: '0 4px',
-  },
+import { Api } from '../Api';
+import styles from './Badge.module.css'
+const api = new Api()
+const StyledBadge = styled(Badge)<BadgeProps>(() => ({
+  '& .MuiBadge-badge': styles.badge,
 }));
+
 export default function UserList() {
   const [users, setUsers] = useState([] as User[])
   useEffect(() => {
-    axios.get(`http://localhost:5000/users`, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-    .then((response) => {
-       setUsers(response.data.user)
-    })
-  }, []);
-    return (<List>
-      {users.map((user) => (
-        <UserListItem user={user} key={user.id}/>
-      ))}
-    </List>)
-  }
-  function UserListItem(props: {user: User}) {
-    const [isSelected, changeSelected] = useState(false as boolean)
-    useEffect(
-      () => {
-        const socket = new WebSocket('ws://localhost:5001')
-        socket.onopen = () => {
-          const sendUser = {
-            clientId: props.user.id
-          }
-          socket.send(JSON.stringify(sendUser))
-        }
-        
-        socket.addEventListener('message', () => {
-          getNotifications().then((result) =>{
-            setNotifications(result)
-          })
-        })
-      }, [props.user.id]
-    )
-    const handleButton = () => {
-      changeSelected(!isSelected)
-      getNotifications().then((result) =>{
-        setNotifications(result)
-      })
+    const asyncSetUsers = async () => {
+      const userss = await api.getUsers()
+      setUsers(userss)
     }
-    const handleInnerClick = (event: React.MouseEvent) => {
-      event.stopPropagation();
-    };
+    asyncSetUsers()
+  }, []);
+  return (<List>
+    {users.map((user) => (
+      <UserListItem user={user} key={user.id} />
+    ))}
+  </List>)
+}
+type UserListItemProps = {
+  user: User
+}
+function UserListItem(props: UserListItemProps) {
+  const [isSelected, changeSelected] = useState(false as boolean)
   const [notifications, setNotifications] = useState([] as Notification[])
-  async function getNotifications(): Promise<Notification[]> {
-    const response = await axios.get(`http://localhost:5000/users/${props.user.id}/notifications/notRead`, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-  
-    return response.data.notifications as Notification[];
+  useEffect(
+    () => {
+      const socket = new WebSocket(`${process.env.REACT_APP_SOCKET}`);
+
+      socket.onopen = () => {
+        const sendUser = {
+          clientId: props.user.id
+        };
+        socket.send(JSON.stringify(sendUser));
+      };
+      socket.addEventListener('message', async () => {
+        const result = await api.getNotifications(props.user.id);
+        setNotifications(result);
+      });
+      window.addEventListener('beforeunload', () => {
+        socket.close();
+      });
+    }, [props.user.id]
+  )
+
+  const handleButton = async () => {
+    changeSelected(!isSelected)
+    setNotifications(await api.getNotifications(props.user.id))
   }
+
+  const handleInnerClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+  };
+
   useEffect(() => {
     const fetchNotifications = async () => {
-        setNotifications(await getNotifications())
+      setNotifications(await api.getNotifications(props.user.id))
     }
     fetchNotifications()
-  }, [])
+
+  }, [props.user.id])
   return (
     <ListItem disablePadding>
-  <ListItemButton disableRipple={isSelected} onClick={handleButton}>
-    <StyledBadge badgeContent={`${notifications.length}`} color="secondary">
-    </StyledBadge>
-    <Grid container spacing={2}>
-      <Grid item xs={12}>
-        <ListItemText primary={`${props.user.username}`} />
-      </Grid>
-      <Grid item xs={6} onClick={handleInnerClick}>
-        {isSelected && <UnreadMessagesList user={props.user} notifications={notifications}/>}
-      </Grid>
-      <Grid item xs={6} onClick={handleInnerClick}>
-        {isSelected && <MessageUserList user={props.user}/>}
-      </Grid>
-    </Grid>
-  </ListItemButton>
-</ListItem>
+      <ListItemButton disableRipple={isSelected} onClick={handleButton}>
+        <StyledBadge badgeContent={`${notifications.length}`} className={styles.styledBadge}>
+        </StyledBadge>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <ListItemText primary={`${props.user.username}`} />
+          </Grid>
+          <Grid item xs={6} onClick={handleInnerClick}>
+            {isSelected && <UnreadMessagesList user={props.user} notifications={notifications} />}
+          </Grid>
+          <Grid item xs={6} onClick={handleInnerClick}>
+            {isSelected && <MessageUserList user={props.user} />}
+          </Grid>
+        </Grid>
+      </ListItemButton>
+    </ListItem>
   );
-  }
+}

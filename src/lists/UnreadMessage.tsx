@@ -1,3 +1,4 @@
+import React from 'react';
 import { useEffect, useState } from 'react';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -5,9 +6,11 @@ import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Checkbox from '@mui/material/Checkbox';
 import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
-import axios from 'axios';
 import { User } from '../App';
-import React from 'react';
+import { Api } from '../Api';
+import styles from './UnreadMessage.module.css';
+
+const api = new Api()
 
 export type Notification = {
   id: number,
@@ -15,15 +18,21 @@ export type Notification = {
   text: string,
   created_at: string
 }
-function UnreadMessagesList(props: {user: User, notifications: Notification[]}) {
+
+type UnreadMessagesListProps = {
+  user: User,
+  notifications: Notification[]
+}
+
+type MessagesListItemProps = {
+  notification: Notification,
+  user: User
+}
+
+function UnreadMessagesList(props: UnreadMessagesListProps) {
   return (
-    <List sx={{
-      marginBottom: 2,
-      border: '1px solid #ccc',
-      borderRadius: '4px',
-      backgroundColor: '#f9f9f9',
-      padding: '10px',
-    }}> Unread Messages
+    <List className={styles.UnreadMessagesList}>
+      Unread Messages
       {props.notifications.map((notification) => (
         <MessagesListItem
           notification={notification}
@@ -34,57 +43,49 @@ function UnreadMessagesList(props: {user: User, notifications: Notification[]}) 
   );
 }
 
-function MessagesListItem(props: { notification: Notification, user: User }) {
+function MessagesListItem(props: MessagesListItemProps) {
+
   const [isRead, setIsRead] = useState(false);
   const [username, setUsername] = useState('');
+
   useEffect(() => {
-    axios.get(`http://localhost:5000/users/${props.notification.created_by}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-    .then((response) => {
-      setUsername(response.data.user[0].username);
-    })
+    const asyncSetUsername = async () => {
+      const data = await api.getUser(Number(props.notification.created_by))
+      setUsername(data.username);
+    }
+    asyncSetUsername()
   }, [props.notification.created_by]);
-  const handleCheckboxChange = () => {
-    axios.post(`http://localhost:5000/notifications/${props.notification.id}`).then((responce) =>{
-      if(responce.status == 200){
-        setIsRead(true);  
-      }
-    })
+
+  const handleCheckboxChange = async () => {
+    const isSuccess = await api.readMessage(props.notification.id)
+    console.log(isSuccess)
+    setIsRead(isSuccess)
   };
+
   return (
-    <ListItem alignItems="flex-start" sx={{
-      marginBottom: 2,
-      border: '1px solid #ccc',
-      borderRadius: '4px',
-      backgroundColor: '#f9f9f9',
-      padding: '10px',
-    }}>
+    <ListItem className={styles.UnreadMessagesListItem}>
       <ListItemSecondaryAction>
-      <Typography variant="body2" color="textSecondary">
+        <Typography>
           Mark as read
         </Typography>
         <Checkbox
           checked={isRead}
           onChange={handleCheckboxChange}
-          color="primary"
         />
       </ListItemSecondaryAction>
       <ListItemText
-  primary={username}
-  secondary={
-    <React.Fragment>
-      <Typography variant="body1">
-        {props.notification.text}
-      </Typography>
-      <Typography variant="caption" color="textSecondary">
-        Date: {props.notification.created_at}
-      </Typography>
-    </React.Fragment>
-  }
-/>
+        primary={username}
+        secondary={
+          <React.Fragment>
+            <Typography>
+              {props.notification.text}
+            </Typography>
+            <Typography>
+              Date: {props.notification.created_at}
+            </Typography>
+          </React.Fragment>
+        }
+      />
     </ListItem>
   );
 }
