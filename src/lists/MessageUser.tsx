@@ -12,14 +12,18 @@ import TextField from '@mui/material/TextField';
 import type { User } from '../App'
 import { Api } from '../Api';
 import styles from './MessageUserList.module.css';
+
 const api = new Api()
+
 type MessageUserListProps = {
   user: User
 }
+
 type MessageUserListItemProps = {
   chosenUser: User,
   userToSendMessage: User
 }
+
 function MessageUserList(props: MessageUserListProps) {
   const [otherUsers, setOtherUsers] = useState([] as User[]);
   const chosenUser = props.user;
@@ -40,17 +44,23 @@ function MessageUserList(props: MessageUserListProps) {
 }
 
 function MessageUserListItem(props: MessageUserListItemProps) {
+
   const [open, setOpen] = React.useState(false);
+
   const handleOpen = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.stopPropagation();
     setOpen(true);
   }
+
   const handleClose = () => setOpen(false);
+
   const [message, setMessage] = useState('')
+
   async function sendMessage() {
     await api.sendMessage(props.chosenUser, props.userToSendMessage, message)
     handleClose()
   }
+
   return (
     <div>
       <ListItem className={styles.messageUserListItem}

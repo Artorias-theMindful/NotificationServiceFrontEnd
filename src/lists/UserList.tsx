@@ -12,13 +12,17 @@ import MessageUserList from './MessageUser';
 import { Notification } from './UnreadMessage';
 import { Api } from '../Api';
 import styles from './Badge.module.css'
+
 const api = new Api()
+
 const StyledBadge = styled(Badge)<BadgeProps>(() => ({
   '& .MuiBadge-badge': styles.badge,
 }));
 
 export default function UserList() {
+
   const [users, setUsers] = useState([] as User[])
+
   useEffect(() => {
     const asyncSetUsers = async () => {
       const userss = await api.getUsers()
@@ -26,11 +30,14 @@ export default function UserList() {
     }
     asyncSetUsers()
   }, []);
-  return (<List>
-    {users.map((user) => (
-      <UserListItem user={user} key={user.id} />
-    ))}
-  </List>)
+
+  return (
+    <List>
+      {users.map((user) => (
+        <UserListItem user={user} key={user.id} />
+      ))}
+    </List>
+  )
 }
 type UserListItemProps = {
   user: User
@@ -41,7 +48,6 @@ function UserListItem(props: UserListItemProps) {
   useEffect(
     () => {
       const socket = new WebSocket(`${process.env.REACT_APP_SOCKET}`);
-
       socket.onopen = () => {
         const sendUser = {
           clientId: props.user.id
@@ -55,6 +61,14 @@ function UserListItem(props: UserListItemProps) {
       window.addEventListener('beforeunload', () => {
         socket.close();
       });
+      socket.onclose = () => {
+        console.log('closing connection')
+      }
+      return () => {
+        socket.close();
+        // after each re-render curr socket will be closed
+      };
+
     }, [props.user.id]
   )
 
