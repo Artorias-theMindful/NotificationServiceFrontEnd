@@ -1,0 +1,16 @@
+.UnreadMessagesList {
+    margin-bottom: 2;
+    border: '1px solid #ccc';
+    border-radius: '4px';
+    background-color: '#f9f9f9';
+    padding: '10px';
+}
+
+.UnreadMessagesListItem {
+    margin-bottom: 2;
+    border: '1px solid #ccc';
+    border-radius: '4px';
+    background-color: '#f9f9f9';
+    padding: '10px';
+    align-items: "flex-start";
+}
